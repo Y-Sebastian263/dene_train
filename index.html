@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>田園都市線すごろく v0.31</title>
+<style>
+:root{--bg:#0b1020;--panel:#111a31;--panel2:#17223d;--text:#f7f8fc;--muted:#aab4cc;--accent:#ffd54a;--local:#00a989;--semi:#08743e;--express:#d52b34;--danger:#fb7185;--purple:#8b5cf6}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:linear-gradient(135deg,#080c18,#10172a);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif}button,select,textarea{font:inherit}.app{min-height:100vh;padding:12px;max-width:1800px;margin:auto}
+.topStatus{display:grid;grid-template-columns:1.1fr .8fr 1.1fr 1fr;gap:10px;margin-bottom:12px}.statusCard{background:#111a31;border:1px solid #263658;border-radius:14px;padding:10px 14px;min-height:82px}.statusLabel{font-size:11px;color:#aebbd3;font-weight:850}.statusValue{font-size:clamp(20px,2vw,30px);font-weight:1000;line-height:1.1;margin-top:4px}.statusSub{font-size:11px;color:#cbd5e1;margin-top:5px}
+.stage{position:relative;height:min(60vh,660px);min-height:480px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 18px 50px #0008;color:#1b1f24}.viewport{position:absolute;inset:0;overflow:auto hidden}.scene{position:relative;height:100%;min-width:4700px;background:linear-gradient(#fff 0 72%,#fbfbfb 72%)}
+.routeHeader{position:absolute;left:34px;top:26px;display:flex;align-items:center;gap:16px;z-index:10}.dtLogo{width:58px;height:58px;border-radius:12px;background:var(--local);color:#fff;font-weight:1000;font-size:25px;display:grid;place-items:center}.routeTitle{font-size:25px;font-weight:1000;line-height:1.05}.routeTitle small{display:block;font-size:13px;font-weight:750;margin-top:5px;color:#50545b}.serviceLegend{display:flex;gap:15px;margin-left:22px;font-size:11px;font-weight:850;align-items:center}.legendLine{display:inline-flex;align-items:center;gap:7px}.legendLine i{width:44px;height:5px;border-radius:99px;display:inline-block}.legendLine.local i{background:var(--local);height:9px}.legendLine.semi i{background:var(--semi)}.legendLine.express i{background:var(--express)}
+.trackWrap{position:absolute;left:150px;right:150px;top:47%;height:315px;transform:translateY(-50%)}.serviceRail{position:absolute;left:0;right:0;border-radius:99px}.railExpress{top:88px;height:7px;background:var(--express)}.railSemi{top:112px;height:7px;background:var(--semi)}.railLocal{top:139px;height:18px;background:var(--local)}
+.station{position:absolute;top:0;height:300px;transform:translateX(-50%);z-index:4;width:1px}.stopMark{position:absolute;left:50%;transform:translate(-50%,-50%);border-radius:50%;background:#fff;z-index:5}.stopMark.express{top:91px;width:17px;height:17px;border:4px solid var(--express)}.stopMark.semi{top:115px;width:17px;height:17px;border:4px solid var(--semi)}.stopMark.local{top:148px;width:31px;height:31px;border:0;background:#fff;box-shadow:0 0 0 2px #fff}.stopMark.off{display:none}.station.localOnly .stopMark.local{box-shadow:0 0 0 4px #f6c945 inset,0 0 0 2px #fff}.station.current .stopMark.local{background:#fde047;box-shadow:0 0 0 5px #7c5d00 inset,0 0 0 8px #fde04755}
+.stationCode{position:absolute;top:182px;left:50%;transform:translateX(-50%);font-weight:1000;font-size:19px;color:#3b3f45;white-space:nowrap}.stationName{position:absolute;top:211px;left:50%;transform:translateX(-50%);writing-mode:vertical-rl;text-orientation:mixed;font-weight:1000;font-size:20px;letter-spacing:.02em;white-space:nowrap;max-height:128px}.stationEn{position:absolute;top:211px;left:31px;writing-mode:vertical-rl;text-orientation:mixed;font-size:9px;color:#555d66;white-space:nowrap}.stopStar{position:absolute;top:45px;left:50%;transform:translateX(-50%);font-size:25px;color:#f2b800;filter:drop-shadow(0 1px 2px #0004);z-index:9}.station.current .stopStar{font-size:31px;top:38px}.currentTag{display:none;position:absolute;top:2px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:1000;white-space:nowrap}.station.current .currentTag{display:block}
+.token{position:absolute;width:42px;height:42px;border-radius:50%;background:#111827;color:#fff;display:grid;place-items:center;font-size:23px;transform:translate(-50%,-50%);top:148px;z-index:12;box-shadow:0 5px 15px #0007;transition:left .45s ease}.directionBadge{position:absolute;right:18px;top:20px;background:#f1f5f9;color:#17223d;border:1px solid #cbd5e1;border-radius:999px;padding:7px 11px;font-size:11px;font-weight:900}
+.bottom{margin-top:12px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px}.section{background:var(--panel2);border:1px solid #263658;border-radius:14px;padding:12px;min-width:0}.section h3{margin:0 0 9px;font-size:15px}.game{grid-column:span 5}.progressBox{grid-column:span 3}.saveBox{grid-column:span 4}.historyBox{grid-column:span 6}.missionBox{grid-column:span 6}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.btn{border:0;border-radius:11px;padding:10px 13px;background:#223050;color:#fff;font-weight:850;cursor:pointer}.btn.primary{background:var(--accent);color:#191600}.btn.green{background:#1f8c67}.btn.red{background:#a83349}.btn.purple{background:#6d4fc4}.btn.ghost{background:transparent;border:1px solid #52658d}.btn:disabled{opacity:.45;cursor:not-allowed}.stat{display:flex;justify-content:space-between;gap:12px;padding:5px 0;color:#dbe5f8;font-size:13px}.log{font-size:12px;color:#cad4e8;max-height:205px;overflow:auto;line-height:1.55}.mini{font-size:11px;color:#aebbd3;line-height:1.5}.missionResult{padding:12px;border-radius:12px;background:#0d1529;border:1px solid #334668;font-size:18px;font-weight:900;text-align:center;margin-bottom:9px}.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#233657;color:#dce8ff;font-size:11px;font-weight:900}.stopList{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.stopChip{padding:4px 8px;border-radius:999px;background:#0d1b31;border:1px solid #34496f;color:#e8eefb;font-size:11px}.stopChip::before{content:'★ ';color:#ffd54a}
+.drawOverlay{position:fixed;z-index:100;display:none;left:50%;top:18px;transform:translateX(-50%);pointer-events:none}.drawOverlay.show{display:block}.drawBox{width:min(620px,92vw);padding:14px 22px;border-radius:18px;background:#0b1429f4;border:2px solid #ffffff70;text-align:center;box-shadow:0 16px 45px #0008}.drawStage{font-size:14px;font-weight:900;color:#cbd5e1}.drawValue{font-size:clamp(36px,5vw,64px);line-height:1.05;font-weight:1000;color:#ffd54a;margin:7px 0;word-break:break-word}.drawValue.rolling{animation:drawPulse .18s ease-in-out infinite alternate}.drawSub{font-size:12px;color:#dce8ff;font-weight:800}.turnBusy .btn{pointer-events:none;opacity:.5}@keyframes drawPulse{from{transform:scale(.96)}to{transform:scale(1.04)}}
+@media(max-width:1000px){.topStatus{grid-template-columns:1fr 1fr}.bottom{grid-template-columns:1fr}.game,.progressBox,.saveBox,.historyBox,.missionBox{grid-column:1}.scene{min-width:4100px}.routeHeader{left:18px}.serviceLegend{display:none}.stage{min-height:460px}.stationName{font-size:18px}.stationEn{font-size:8px}}
+@media(max-width:560px){.topStatus{grid-template-columns:1fr}.statusCard{min-height:auto}.scene{min-width:3800px}.trackWrap{left:110px;right:110px}.routeTitle{font-size:20px}.dtLogo{width:48px;height:48px;font-size:21px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topStatus" aria-label="ゲーム状況">
+    <div class="statusCard"><div class="statusLabel">現在地</div><div class="statusValue" id="currentStation">渋谷</div><div class="statusSub" id="currentService">スタート地点 ★</div></div>
+    <div class="statusCard"><div class="statusLabel">今回の出目</div><div class="statusValue" id="die">—</div><div class="statusSub" id="moveText">中央林間方面へ進行中</div></div>
+    <div class="statusCard"><div class="statusLabel">車種</div><div class="statusValue" id="vehicle">未抽選</div><div class="statusSub">Excel基本ルール /dice 5</div></div>
+    <div class="statusCard"><div class="statusLabel">列車種別</div><div class="statusValue" id="serviceHud">各駅停車</div><div class="statusSub">停車駅に従って自動進行</div></div>
+  </div>
+  <div class="stage">
+    <div class="viewport" id="viewport">
+      <div class="scene" id="scene">
+        <div class="routeHeader"><div class="dtLogo">DT</div><div class="routeTitle">東急田園都市線<small>Tokyu Den-en-toshi Line</small></div><div class="serviceLegend"><span class="legendLine express"><i></i>急行 Express</span><span class="legendLine semi"><i></i>準急 Semi-Express</span><span class="legendLine local"><i></i>各駅停車 Local</span></div></div>
+        <div class="directionBadge">自動往復：渋谷 ⇄ 中央林間</div>
+        <div class="trackWrap" id="trackWrap"><div class="serviceRail railExpress"></div><div class="serviceRail railSemi"></div><div class="serviceRail railLocal"></div><div class="token" id="token">🚃</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom">
+    <section class="section game"><h3>🎮 ゲーム操作</h3><div class="row">
+      <button class="btn primary" id="diceBtn">🎲 1ターン自動抽選</button>
+      <button class="btn ghost" id="undoBtn">↶ 一手戻す</button>
+      <button class="btn red" id="resetBtn">最初から</button>
+    </div><div class="mini" style="margin-top:9px">進行方向・車種・種別は操作できません。出目 → 車種 → 種別の順に自動抽選し、各抽選は2秒アニメーション＋結果3秒表示。その後、停車駅を1マスとして自動移動します。中央林間と渋谷で自動折り返しして往復します。</div></section>
+
+    <section class="section progressBox"><h3>📊 進捗</h3><div class="stat"><span>現在駅</span><strong id="progress">1 / 27</strong></div><div class="stat"><span>停止済み駅</span><strong id="stopCount">1 / 27</strong></div><div class="stat"><span>各停のみ駅 停止数</span><strong id="localCount">0 / 9</strong></div><div class="stat"><span>ターン</span><strong id="turns">0</strong></div></section>
+
+    <section class="section saveBox"><h3>💾 セーブ / ロード</h3><div class="row"><button class="btn green" id="saveBtn">ブラウザ保存</button><button class="btn" id="loadBtn">続きから</button><button class="btn ghost" id="exportBtn">JSON書き出し</button><label class="btn ghost" style="margin:0">JSON読込<input id="importFile" type="file" accept=".json,application/json" hidden></label></div><div class="mini" id="saveStatus" style="margin-top:8px">未保存</div></section>
+
+    <section class="section historyBox"><h3>🧾 停止履歴</h3><div class="log" id="log">★ 渋谷（スタート）</div><div class="stopList" id="stopList"></div></section>
+
+    <section class="section missionBox"><h3>🎯 ミッション</h3><div class="missionResult" id="missionResult">抽選待ち</div><div class="row"><button class="btn purple" id="missionBtn">ミッション抽選</button><button class="btn green" id="confirmMission" disabled>この内容で確定</button></div><div class="mini" id="missionHistory" style="margin-top:8px">確定ミッション: 0件</div></section>
+  </div>
+</div>
+<div class="drawOverlay" id="drawOverlay" aria-live="assertive"><div class="drawBox"><div class="drawStage" id="drawStage">抽選中</div><div class="drawValue" id="drawValue">—</div><div class="drawSub" id="drawSub">2秒間抽選します</div></div></div>
+<script>
+const stations=[
+{n:'01',name:'渋谷',en:'Shibuya',local:true,semi:true,express:true},
+{n:'02',name:'池尻大橋',en:'Ikejiri-ohashi',local:true,semi:true,express:false},
+{n:'03',name:'三軒茶屋',en:'Sangen-jaya',local:true,semi:true,express:true},
+{n:'04',name:'駒澤大学',en:'Komazawa-daigaku',local:true,semi:true,express:false},
+{n:'05',name:'桜新町',en:'Sakura-shimmachi',local:true,semi:true,express:false},
+{n:'06',name:'用賀',en:'Yoga',local:true,semi:true,express:false},
+{n:'07',name:'二子玉川',en:'Futako-tamagawa',local:true,semi:true,express:true},
+{n:'08',name:'二子新地',en:'Futako-shinchi',local:true,semi:false,express:false},
+{n:'09',name:'高津',en:'Takatsu',local:true,semi:false,express:false},
+{n:'10',name:'溝の口',en:'Mizonokuchi',local:true,semi:true,express:true},
+{n:'11',name:'梶が谷',en:'Kajigaya',local:true,semi:false,express:false},
+{n:'12',name:'宮崎台',en:'Miyazakidai',local:true,semi:false,express:false},
+{n:'13',name:'宮前平',en:'Miyamaedaira',local:true,semi:false,express:false},
+{n:'14',name:'鷺沼',en:'Saginuma',local:true,semi:true,express:true},
+{n:'15',name:'たまプラーザ',en:'Tama-plaza',local:true,semi:true,express:true},
+{n:'16',name:'あざみ野',en:'Azamino',local:true,semi:true,express:true},
+{n:'17',name:'江田',en:'Eda',local:true,semi:false,express:false},
+{n:'18',name:'市ヶ尾',en:'Ichigao',local:true,semi:false,express:false},
+{n:'19',name:'藤が丘',en:'Fujigaoka',local:true,semi:false,express:false},
+{n:'20',name:'青葉台',en:'Aobadai',local:true,semi:true,express:true},
+{n:'21',name:'田奈',en:'Tana',local:true,semi:false,express:false},
+{n:'22',name:'長津田',en:'Nagatsuta',local:true,semi:true,express:true},
+{n:'23',name:'つくし野',en:'Tsukushino',local:true,semi:true,express:false},
+{n:'24',name:'すずかけ台',en:'Suzukakedai',local:true,semi:true,express:false},
+{n:'25',name:'南町田グランベリーパーク',en:'Minami-machida Grandberry Park',local:true,semi:true,express:true},
+{n:'26',name:'つきみ野',en:'Tsukimino',local:true,semi:true,express:false},
+{n:'27',name:'中央林間',en:'Chuo-rinkan',local:true,semi:true,express:true}
+];
+const localOnlyIndexes=new Set(stations.map((s,i)=>!s.semi&&!s.express?i:null).filter(v=>v!==null));
+const vehicles=['東急5000系','東急2020系','東武50000系','東京メトロ08系','東京メトロ18000系'];
+const serviceNames={local:'各駅停車',semi:'準急',express:'急行'};
+const missions=['現在駅の駅名看板を撮る','駅周辺で気になる店を1つ探す','駅前で記念写真を撮る','次の停車駅までの間にご当地・地域ネタを1つ調べる','視聴者アンケートで次の行動を1つ決める','駅から徒歩10分以内で気になる場所を探す','飲み物または軽食を1つ買う','現在駅について30秒で紹介する'];
+const SAVE_KEY='denentoshi_sugoroku_v031';
+let state=newGame(),undoStack=[],turnBusy=false;
+function newGame(){return{current:0,direction:1,turns:0,vehicle:null,service:'local',stopped:[0],logs:['★ 渋谷（スタート）'],missions:[],pendingMission:null,lastRoll:null,lastMoveText:'中央林間方面へ進行中'}}
+const wrap=document.getElementById('trackWrap'),viewport=document.getElementById('viewport'),token=document.getElementById('token');
+function pct(i){return(1-i/(stations.length-1))*100}
+function isStopFor(i,service){return !!stations[i]?.[service]}
+function nextStopIndex(from,service,direction){if(direction>0){for(let i=from+1;i<stations.length;i++)if(isStopFor(i,service))return i;return stations.length-1}else{for(let i=from-1;i>=0;i--)if(isStopFor(i,service))return i;return 0}}
+function stoppedSet(){return new Set(state.stopped)}
+function snapshot(){return JSON.parse(JSON.stringify(state))}
+function pushUndo(){undoStack.push(snapshot());if(undoStack.length>30)undoStack.shift()}
+function draw(){
+  if(!isStopFor(state.current,state.service))state.service='local';
+  const stopped=stoppedSet();wrap.querySelectorAll('.station').forEach(e=>e.remove());
+  stations.forEach((s,i)=>{
+    const el=document.createElement('div');
+    el.className='station'+(localOnlyIndexes.has(i)?' localOnly':'')+(i===state.current?' current':'')+(stopped.has(i)?' stopped':'');
+    el.style.left=pct(i)+'%';
+    el.innerHTML=`${stopped.has(i)?'<div class="stopStar" title="停止済み">★</div>':''}<div class="currentTag">現在地</div><div class="stopMark express ${s.express?'':'off'}"></div><div class="stopMark semi ${s.semi?'':'off'}"></div><div class="stopMark local"></div><div class="stationCode">DT ${s.n}</div><div class="stationName">${escapeHtml(s.name)}</div><div class="stationEn">${escapeHtml(s.en)}</div>`;
+    wrap.appendChild(el)
+  });
+  token.style.left=pct(state.current)+'%';const s=stations[state.current];
+  document.getElementById('currentStation').textContent=s.name;document.getElementById('currentService').textContent=(localOnlyIndexes.has(state.current)?'★ 各駅停車しか止まらない駅':'停止済み ★')+' / '+serviceNames[state.service]+' / '+((state.direction||1)>0?'→中央林間':'←渋谷');
+  document.getElementById('progress').textContent=`${state.current+1} / ${stations.length}`;document.getElementById('stopCount').textContent=`${new Set(state.stopped).size} / ${stations.length}`;document.getElementById('localCount').textContent=`${[...new Set(state.stopped)].filter(i=>localOnlyIndexes.has(i)).length} / ${localOnlyIndexes.size}`;document.getElementById('turns').textContent=state.turns;
+  document.getElementById('die').textContent=state.lastRoll??'—';document.getElementById('moveText').textContent=state.lastMoveText;document.getElementById('vehicle').textContent=state.vehicle||'未抽選';document.getElementById('serviceHud').textContent=serviceNames[state.service];
+  document.getElementById('log').innerHTML=state.logs.length?state.logs.map(x=>'・'+escapeHtml(x)).join('<br>'):'まだ移動していません';document.getElementById('stopList').innerHTML=[...new Set(state.stopped)].map(i=>`<span class="stopChip">${escapeHtml(stations[i].name)}</span>`).join('');
+  document.getElementById('missionResult').textContent=state.pendingMission||'抽選待ち';document.getElementById('confirmMission').disabled=!state.pendingMission;document.getElementById('missionHistory').textContent=`確定ミッション: ${state.missions.length}件${state.missions.length?' / '+state.missions.map(m=>m.station+'「'+m.text+'」').join('、'):''}`;
+  document.getElementById('diceBtn').disabled=turnBusy;document.getElementById('undoBtn').disabled=turnBusy||!undoStack.length;document.body.classList.toggle('turnBusy',turnBusy);
+  requestAnimationFrame(()=>{const sceneW=document.getElementById('scene').clientWidth;const x=(150+(sceneW-300)*(pct(state.current)/100))-viewport.clientWidth/2;viewport.scrollTo({left:Math.max(0,x),behavior:'smooth'})});
+}
+function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function randomInt(n){return 1+Math.floor(Math.random()*n)}
+function availableServicesAt(i){return Object.keys(serviceNames).filter(k=>isStopFor(i,k))}
+async function animateDecision(label,values,finalValue,detail=''){
+  const overlay=document.getElementById('drawOverlay'),stage=document.getElementById('drawStage'),value=document.getElementById('drawValue'),sub=document.getElementById('drawSub');
+  overlay.classList.add('show');stage.textContent=label+' 抽選中';sub.textContent='決定アニメーション 2秒';value.classList.add('rolling');
+  const started=Date.now();while(Date.now()-started<2000){value.textContent=values[Math.floor(Math.random()*values.length)];await sleep(90)}
+  value.classList.remove('rolling');value.textContent=finalValue;stage.textContent=label+' 決定';sub.textContent=detail||'結果を3秒表示します';await sleep(3000);overlay.classList.remove('show');
+}
+async function runTurn(){
+  if(turnBusy)return;pushUndo();turnBusy=true;draw();
+  try{
+    const roll=randomInt(6);await animateDecision('出目',['1','2','3','4','5','6'],String(roll),`/dice 6 → ${roll}`);state.lastRoll=roll;
+    const vehicleNo=randomInt(5),vehicle=vehicles[vehicleNo-1];await animateDecision('車種',vehicles,vehicle,`/dice 5 → ${vehicleNo}`);state.vehicle=vehicle;
+    const services=availableServicesAt(state.current);const service=services[Math.floor(Math.random()*services.length)];await animateDecision('種別',services.map(k=>serviceNames[k]),serviceNames[service],`${stations[state.current].name}から利用可能な種別から自動抽選`);state.service=service;
+    const from=state.current,fromName=stations[from].name;state.turns++;
+    let pos=state.current,dir=state.direction||1;const visited=[];
+    for(let step=0;step<roll;step++){
+      if(pos===stations.length-1&&dir>0){dir=-1;state.logs.unshift('↩ 中央林間で折り返し：渋谷方面へ')}
+      else if(pos===0&&dir<0){dir=1;state.logs.unshift('↪ 渋谷で折り返し：中央林間方面へ')}
+      const next=nextStopIndex(pos,state.service,dir);if(next===pos){dir*=-1;step--;continue}pos=next;visited.push(pos);
+    }
+    state.current=pos;state.direction=dir;if(!state.stopped.includes(pos))state.stopped.push(pos);
+    const toName=stations[pos].name,dirText=dir>0?'中央林間方面':'渋谷方面';state.lastMoveText=`${serviceNames[state.service]}：${fromName} → ${toName}（出目 ${roll}） / 次は${dirText}`;
+    state.logs.unshift(`🎲 ${roll} → 🚆 ${state.vehicle} → ${serviceNames[state.service]}：${fromName} → ${toName} に停止 ★`);if(localOnlyIndexes.has(pos))state.logs.unshift(`⭐ 各停のみ駅「${toName}」に停止！`);
+    if(pos===stations.length-1)state.logs.unshift('🏁 中央林間に停止。次の移動は渋谷方面へ折り返します');if(pos===0&&state.turns>0)state.logs.unshift('🏁 渋谷に停止。次の移動は中央林間方面へ折り返します');
+  }finally{turnBusy=false;draw()}
+}
+function undo(){if(!undoStack.length)return;state=undoStack.pop();draw()}
+function reset(){if(!confirm('渋谷から最初からやり直しますか？'))return;state=newGame();undoStack=[];draw();viewport.scrollTo({left:0,behavior:'smooth'});document.getElementById('saveStatus').textContent='未保存'}
+function save(){localStorage.setItem(SAVE_KEY,JSON.stringify(state));document.getElementById('saveStatus').textContent='保存しました：'+new Date().toLocaleString('ja-JP')}
+function load(){const raw=localStorage.getItem(SAVE_KEY);if(!raw){document.getElementById('saveStatus').textContent='保存データがありません';return}try{state={...newGame(),...JSON.parse(raw)};if(![1,-1].includes(state.direction))state.direction=1;undoStack=[];draw();document.getElementById('saveStatus').textContent='保存データを読み込みました'}catch(e){document.getElementById('saveStatus').textContent='読み込みに失敗しました'}}
+function exportJson(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='denentoshi_sugoroku_save.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function importJson(file){const r=new FileReader();r.onload=()=>{try{state={...newGame(),...JSON.parse(r.result)};if(![1,-1].includes(state.direction))state.direction=1;undoStack=[];draw();document.getElementById('saveStatus').textContent='JSONセーブを読み込みました'}catch(e){alert('JSONを読み込めませんでした')}};r.readAsText(file)}
+function drawMission(){const m=missions[Math.floor(Math.random()*missions.length)];state.pendingMission=m;draw()}
+function confirmMission(){if(!state.pendingMission)return;pushUndo();state.missions.push({station:stations[state.current].name,text:state.pendingMission});state.logs.unshift(`🎯 ${stations[state.current].name}：${state.pendingMission}`);state.pendingMission=null;draw()}
+document.getElementById('diceBtn').onclick=runTurn;document.getElementById('undoBtn').onclick=undo;document.getElementById('resetBtn').onclick=reset;document.getElementById('saveBtn').onclick=save;document.getElementById('loadBtn').onclick=load;document.getElementById('exportBtn').onclick=exportJson;document.getElementById('importFile').onchange=e=>{if(e.target.files[0])importJson(e.target.files[0]);e.target.value=''};document.getElementById('missionBtn').onclick=drawMission;document.getElementById('confirmMission').onclick=confirmMission;
+draw();
+</script>
+</body>
+</html>

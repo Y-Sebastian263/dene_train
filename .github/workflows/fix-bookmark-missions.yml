@@ -1,0 +1,41 @@
+name: Fix bookmark missions
+
+on:
+  push:
+    paths:
+      - .github/workflows/fix-bookmark-missions.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch bookmark mission association
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = "function bookmarkText(){const lines=['井の頭線 お出かけのしおり',''];state.visits.forEach((v,i)=>{lines.push(`${i+1}. ${stations[v.stationIndex].name}${i===0?'（スタート）':''}`);const ms=state.missions.filter(m=>m.visitNo===i+1);ms.forEach(m=>lines.push(`   ミッション：${m.text}`));lines.push('')});return lines.join('\\n').trim()}"
+          new = "function missionVisitNo(m){if(m.visitNo===null)return null;if(Number.isInteger(m.visitNo)&&m.visitNo>=1&&m.visitNo<=state.visits.length)return m.visitNo;if(m.visitNo===undefined&&m.station){for(let i=state.visits.length-1;i>=0;i--){if(stations[state.visits[i].stationIndex].name===m.station)return i+1}}return null}function missionsForVisit(i){return state.missions.filter(m=>missionVisitNo(m)===i+1)}function bookmarkText(){const lines=['井の頭線 お出かけのしおり',''];state.visits.forEach((v,i)=>{lines.push(`${i+1}. ${stations[v.stationIndex].name}${i===0?'（スタート）':''}`);const ms=missionsForVisit(i);ms.forEach(m=>lines.push(`   ミッション：${m.text}`));lines.push('')});return lines.join('\\n').trim()}"
+          if old not in s:
+              raise SystemExit('bookmarkText target not found')
+          s = s.replace(old, new, 1)
+          old2 = "${state.visits.map((v,i)=>`<div class=\"entry\"><div class=\"num\">${i+1}. ${escapeHtml(stations[v.stationIndex].name)}${i===0?'（スタート）':''}</div>${state.missions.filter(m=>m.visitNo===i+1).map(m=>`<div class=\"mission\">ミッション：${escapeHtml(m.text)}</div>`).join('')}</div>`).join('')}"
+          new2 = "${state.visits.map((v,i)=>`<div class=\"entry\"><div class=\"num\">${i+1}. ${escapeHtml(stations[v.stationIndex].name)}${i===0?'（スタート）':''}</div>${missionsForVisit(i).map(m=>`<div class=\"mission\">ミッション：${escapeHtml(m.text)}</div>`).join('')}</div>`).join('')}"
+          if old2 not in s:
+              raise SystemExit('export target not found')
+          s = s.replace(old2, new2, 1)
+          s = s.replace('<title>井の頭線すごろく v2.0</title>', '<title>井の頭線すごろく v2.1</title>', 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Fix missions in bookmark export"
+          git push

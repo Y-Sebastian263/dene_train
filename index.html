@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>井の頭線すごろく v1.6</title>
+<title>井の頭線すごろく v1.7</title>
 <style>
 :root{--bg:#0b1020;--panel:#111a31;--panel2:#17223d;--text:#f7f8fc;--muted:#aab4cc;--accent:#ffd54a;--local:#0aa06e;--express:#d52b34;--danger:#fb7185;--purple:#8b5cf6}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:linear-gradient(135deg,#080c18,#10172a);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif}button,input,select,textarea{font:inherit}.app{min-height:100vh;padding:12px;max-width:1800px;margin:auto}
@@ -46,6 +46,10 @@
   .viewport{top:74px}
   .trackWrap{top:46%}
 }
+/* keep service guide visible beside the line title */
+.serviceLegend{display:flex!important}
+@media(max-width:1380px){.serviceLegend{gap:8px;margin-left:6px;font-size:10px}.legendLine{gap:5px}.legendLine i{width:30px}}
+@media(max-width:1050px){.serviceLegend{gap:7px;margin-left:4px;font-size:9px}.legendLine i{width:24px}}
 </style>
 </head>
 <body>

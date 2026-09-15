@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>井の頭線すごろく v1.0</title>
+<title>井の頭線すごろく v1.1</title>
 <style>
 :root{--bg:#0b1020;--panel:#111a31;--panel2:#17223d;--text:#f7f8fc;--muted:#aab4cc;--accent:#ffd54a;--local:#0aa06e;--express:#d52b34;--danger:#fb7185;--purple:#8b5cf6}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:linear-gradient(135deg,#080c18,#10172a);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif}button,select,textarea{font:inherit}.app{min-height:100vh;padding:12px;max-width:1800px;margin:auto}
@@ -46,7 +46,7 @@
       <button class="btn red" id="resetBtn">最初から</button>
     </div><div class="mini" style="margin-top:9px">Excel準拠：まず /dice 2 で「各駅停車 / 急行」を自動決定し、その後 /dice 6 で進む駅数を自動決定します。各抽選は2秒アニメーション＋結果3秒表示。渋谷・吉祥寺に着くたび自動で折り返し、全17駅に停止したら終了です。</div></section>
 
-    <section class="section progressBox"><h3>📊 進捗</h3><div class="stat"><span>現在駅</span><strong id="progress">1 / 17</strong></div><div class="stat"><span>停止済み駅</span><strong id="stopCount">1 / 17</strong></div><div class="stat"><span>各停のみ駅 停止数</span><strong id="localCount">0 / 9</strong></div><div class="stat"><span>ターン</span><strong id="turns">0</strong></div></section>
+    <section class="section progressBox"><h3>📊 進捗</h3><div class="stat"><span>現在駅</span><strong id="progress">1 / 17</strong></div><div class="stat"><span>停止済み駅</span><strong id="stopCount">1 / 17</strong></div><div class="stat"><span>各停のみ駅 停止数</span><strong id="localCount">0 / 11</strong></div><div class="stat"><span>ターン</span><strong id="turns">0</strong></div></section>
 
     <section class="section saveBox"><h3>💾 セーブ / ロード</h3><div class="row"><button class="btn green" id="saveBtn">ブラウザ保存</button><button class="btn" id="loadBtn">続きから</button><button class="btn ghost" id="exportBtn">JSON書き出し</button><label class="btn ghost" style="margin:0">JSON読込<input id="importFile" type="file" accept=".json,application/json" hidden></label></div><div class="mini" id="saveStatus" style="margin-top:8px">未保存</div></section>
 
@@ -72,14 +72,14 @@ const stations=[
 {n:'12',name:'高井戸',en:'Takaido',local:true,express:false},
 {n:'13',name:'富士見ヶ丘',en:'Fujimigaoka',local:true,express:false},
 {n:'14',name:'久我山',en:'Kugayama',local:true,express:true},
-{n:'15',name:'三鷹台',en:'Mitakadai',local:true,express:true},
-{n:'16',name:'井の頭公園',en:'Inokashira-koen',local:true,express:true},
+{n:'15',name:'三鷹台',en:'Mitakadai',local:true,express:false},
+{n:'16',name:'井の頭公園',en:'Inokashira-koen',local:true,express:false},
 {n:'17',name:'吉祥寺',en:'Kichijoji',local:true,express:true}
 ];
 const localOnlyIndexes=new Set(stations.map((s,i)=>!s.express?i:null).filter(v=>v!==null));
 const serviceNames={local:'各駅停車',express:'急行'};
 const missions=['現在駅の駅名看板を撮る','駅周辺で気になる店を1つ探す','駅前で記念写真を撮る','次の停車駅までの間に地域ネタを1つ調べる','視聴者アンケートで次の行動を1つ決める','駅から徒歩10分以内で気になる場所を探す','飲み物または軽食を1つ買う','現在駅について30秒で紹介する'];
-const SAVE_KEY='inokashira_sugoroku_v10';
+const SAVE_KEY='inokashira_sugoroku_v11';
 let state=newGame(),undoStack=[],turnBusy=false;
 function newGame(){return{current:0,direction:1,turns:0,service:null,stopped:[0],logs:['★ 渋谷（スタート）'],missions:[],pendingMission:null,lastRoll:null,lastMoveText:'吉祥寺方面へ進行中',complete:false}}
 const wrap=document.getElementById('trackWrap'),viewport=document.getElementById('viewport'),token=document.getElementById('token');

@@ -1,0 +1,62 @@
+name: Add special animation and completion popup v24
+
+on:
+  push:
+    paths:
+      - .github/workflows/add-special-animation-completion-v24.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch app
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('<title>井の頭線すごろく v2.3</title>','<title>井の頭線すごろく v2.4</title>',1)
+
+          modal_anchor='<div class="modalBackdrop" id="specialModal"><div class="modal"><h2>🛠 特別対応</h2><div class="mini" style="color:#475569">通常ルールとは別に、現在地・種別・制覇・ミッションを手動で指定できます。</div><div class="specialGrid"><label for="specialService">種別</label><select id="specialService"><option value="">変更しない</option><option value="local">各駅停車</option><option value="express">急行</option></select><label for="specialStation">駅</label><select id="specialStation"></select><label>制覇追加</label><label class="specialCheck"><input type="checkbox" id="specialConquer"> 選択駅を制覇済みにして★を付ける</label><label for="specialMission">ミッション</label><select id="specialMission"><option value="">追加しない</option></select></div><div class="specialHelp">※「駅」を選ぶと現在地をその駅へ直接変更します。制覇追加とミッション追加は必要なものだけ選択できます。</div><div class="modalActions"><button class="btn ghost" id="specialCancel">キャンセル</button><button class="btn green" id="specialApply">適用</button></div></div></div>'
+          completion_modal=modal_anchor+'\n<div class="modalBackdrop" id="completionModal"><div class="modal" style="text-align:center"><div style="font-size:56px;margin-bottom:8px">🎉</div><h2 style="font-size:28px">全17駅制覇おめでとう！</h2><p style="line-height:1.8;color:#475569">井の頭線の全駅に到着しました。<br>旅の記録を「お出かけのしおり」で確認・出力できます。</p><div class="modalActions" style="justify-content:center;margin-top:18px"><button class="btn ghost" id="completionClose">閉じる</button><button class="btn green" id="completionBookmark">📖 栞を確認する</button></div></div></div>'
+          if modal_anchor not in s: raise SystemExit('special modal anchor missing')
+          s=s.replace(modal_anchor,completion_modal,1)
+
+          old_newgame="function newGame(){return{current:0,direction:1,turns:0,service:null,stopped:[0],visits:[{stationIndex:0,turn:0}],logs:['ゲーム開始：渋谷からスタート'],missions:[],pendingMission:null,lastRoll:null,lastMoveText:'吉祥寺方面へ進行中',complete:false}}"
+          new_newgame="function newGame(){return{current:0,direction:1,turns:0,service:null,stopped:[0],visits:[{stationIndex:0,turn:0}],logs:['ゲーム開始：渋谷からスタート'],missions:[],pendingMission:null,lastRoll:null,lastMoveText:'吉祥寺方面へ進行中',complete:false,completionPromptShown:false}}"
+          if old_newgame not in s: raise SystemExit('newGame anchor missing')
+          s=s.replace(old_newgame,new_newgame,1)
+
+          old_draw_tail="state.complete=total===17;document.getElementById('completeBanner').classList.toggle('show',state.complete);document.getElementById('diceBtn').disabled=turnBusy||state.complete;"
+          new_draw_tail="state.complete=total===17;document.getElementById('completeBanner').classList.toggle('show',state.complete);if(state.complete&&!state.completionPromptShown){state.completionPromptShown=true;setTimeout(openCompletionPrompt,0)}document.getElementById('diceBtn').disabled=turnBusy||state.complete;"
+          if old_draw_tail not in s: raise SystemExit('draw completion anchor missing')
+          s=s.replace(old_draw_tail,new_draw_tail,1)
+
+          old_close="function closeBookmarkPreview(){document.getElementById('bookmarkModal').classList.remove('show')}"
+          new_close=old_close+"function openCompletionPrompt(){document.getElementById('completionModal').classList.add('show')}function closeCompletionPrompt(){document.getElementById('completionModal').classList.remove('show')}function openCompletionBookmark(){closeCompletionPrompt();openBookmarkPreview()}"
+          if old_close not in s: raise SystemExit('bookmark close anchor missing')
+          s=s.replace(old_close,new_close,1)
+
+          old_special="function openSpecial(){specialStation.value=String(state.current);document.getElementById('specialService').value=state.service||'';document.getElementById('specialConquer').checked=false;refreshSpecialMissions();specialMission.value='';document.getElementById('specialModal').classList.add('show')}function closeSpecial(){document.getElementById('specialModal').classList.remove('show')}function applySpecial(){const idx=Number(specialStation.value),svc=document.getElementById('specialService').value,conquer=document.getElementById('specialConquer').checked,missionIdx=specialMission.value;pushUndo();const changes=[];state.current=idx;changes.push(`駅=${stations[idx].name}`);if(svc){state.service=svc;changes.push(`種別=${serviceNames[svc]}`)}if(conquer&&!state.stopped.includes(idx)){state.stopped.push(idx);changes.push('制覇追加')}else if(conquer){changes.push('制覇済み')}if(missionIdx!==''){const text=missionPool[Number(missionIdx)];let visitNo=null;for(let i=state.visits.length-1;i>=0;i--){if(state.visits[i].stationIndex===idx){visitNo=i+1;break}}state.missions.push({station:stations[idx].name,text,visitNo});changes.push(`ミッション=「${text}」`)}state.lastMoveText=`特別対応：${stations[idx].name}へ手動設定`;addLog(`特別対応：${changes.join(' / ')}`);closeSpecial();draw()}"
+          new_special="function openSpecial(){specialStation.value=String(state.current);document.getElementById('specialService').value=state.service||'';document.getElementById('specialConquer').checked=false;refreshSpecialMissions();specialMission.value='';document.getElementById('specialModal').classList.add('show')}function closeSpecial(){document.getElementById('specialModal').classList.remove('show')}async function applySpecial(){if(turnBusy)return;const idx=Number(specialStation.value),svc=document.getElementById('specialService').value,conquer=document.getElementById('specialConquer').checked,missionIdx=specialMission.value,from=state.current;pushUndo();const changes=[];closeSpecial();turnBusy=true;draw();try{const path=[];appendPhysicalPath(path,from,idx);if(path.length)await animatePath(path);state.current=idx;if(idx!==from)state.direction=idx>from?1:-1;changes.push(`駅=${stations[idx].name}`);if(svc){state.service=svc;changes.push(`種別=${serviceNames[svc]}`)}if(conquer&&!state.stopped.includes(idx)){state.stopped.push(idx);changes.push('制覇追加')}else if(conquer){changes.push('制覇済み')}if(missionIdx!==''){const text=missionPool[Number(missionIdx)];let visitNo=null;for(let i=state.visits.length-1;i>=0;i--){if(state.visits[i].stationIndex===idx){visitNo=i+1;break}}state.missions.push({station:stations[idx].name,text,visitNo});changes.push(`ミッション=「${text}」`)}state.lastMoveText=`特別対応：${stations[idx].name}へ手動設定`;addLog(`特別対応：${changes.join(' / ')}`)}finally{turnBusy=false;draw()}}"
+          if old_special not in s: raise SystemExit('special apply anchor missing')
+          s=s.replace(old_special,new_special,1)
+
+          old_events="document.getElementById('specialBtn').onclick=openSpecial;document.getElementById('specialCancel').onclick=closeSpecial;document.getElementById('specialApply').onclick=applySpecial;document.getElementById('specialModal').onclick=e=>{if(e.target.id==='specialModal')closeSpecial()};draw();"
+          new_events="document.getElementById('specialBtn').onclick=openSpecial;document.getElementById('specialCancel').onclick=closeSpecial;document.getElementById('specialApply').onclick=applySpecial;document.getElementById('specialModal').onclick=e=>{if(e.target.id==='specialModal')closeSpecial()};document.getElementById('completionClose').onclick=closeCompletionPrompt;document.getElementById('completionBookmark').onclick=openCompletionBookmark;document.getElementById('completionModal').onclick=e=>{if(e.target.id==='completionModal')closeCompletionPrompt()};draw();"
+          if old_events not in s: raise SystemExit('event anchor missing')
+          s=s.replace(old_events,new_events,1)
+
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Animate special moves and add completion prompt"
+          git push

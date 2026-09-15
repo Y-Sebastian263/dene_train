@@ -1,0 +1,67 @@
+name: Add special response controls v23
+
+on:
+  push:
+    paths:
+      - .github/workflows/add-special-controls-v23.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add special response popup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('<title>井の頭線すごろく v2.2</title>','<title>井の頭線すごろく v2.3</title>',1)
+
+          css_anchor='.modalActions{display:flex;justify-content:flex-end;gap:8px}.modal .btn.ghost{color:#17223d;border-color:#94a3b8}.bookmarkBtn{margin-top:10px}'
+          css_new='.modalActions{display:flex;justify-content:flex-end;gap:8px}.modal .btn.ghost{color:#17223d;border-color:#94a3b8}.bookmarkBtn{margin-top:10px}.specialBtn{margin-top:10px;background:#b45309}.specialGrid{display:grid;grid-template-columns:160px 1fr;gap:10px 14px;align-items:center;margin:16px 0}.specialGrid label{font-weight:900}.specialGrid select{width:100%;border:1px solid #94a3b8;border-radius:9px;padding:9px 10px;background:#fff;color:#17223d}.specialCheck{display:flex;align-items:center;gap:8px;font-weight:800}.specialHelp{margin-top:8px;color:#64748b;font-size:12px}@media(max-width:560px){.specialGrid{grid-template-columns:1fr;gap:6px}.specialGrid label{margin-top:6px}}'
+          if css_anchor not in s: raise SystemExit('css anchor missing')
+          s=s.replace(css_anchor,css_new,1)
+
+          rule_old='<div class="bottom"><section class="section game"><h3>🎮 ルール</h3><div class="mini">通常ターンは /dice 2 で種別、/dice 6 で進む駅数を自動決定します。移動中は通過駅も含め1駅ずつ0.5秒間隔で進みます。「指定駅へ」は最短の種別を自動選択し、制覇・★の対象外です。</div></section>'
+          rule_new='<div class="bottom"><section class="section game"><h3>🎮 ルール</h3><div class="mini">通常ターンは /dice 2 で種別、/dice 6 で進む駅数を自動決定します。移動中は通過駅も含め1駅ずつ0.5秒間隔で進みます。「指定駅へ」は最短の種別を自動選択し、制覇・★の対象外です。</div><button class="btn specialBtn" id="specialBtn">🛠 特別対応</button></section>'
+          if rule_old not in s: raise SystemExit('rule anchor missing')
+          s=s.replace(rule_old,rule_new,1)
+
+          modal_anchor='<div class="modalBackdrop" id="bookmarkModal"><div class="modal"><h2>📖 お出かけのしおり確認</h2><div class="mini" style="color:#475569">しおりには通常停止した駅と、その停止時に確定したミッションだけを出力します。</div><div class="modalPreview" id="bookmarkPreview"></div><div class="modalActions"><button class="btn ghost" id="bookmarkCancel">キャンセル</button><button class="btn green" id="bookmarkExport">出力</button></div></div></div>'
+          modal_new=modal_anchor+'\n<div class="modalBackdrop" id="specialModal"><div class="modal"><h2>🛠 特別対応</h2><div class="mini" style="color:#475569">通常ルールとは別に、現在地・種別・制覇・ミッションを手動で指定できます。</div><div class="specialGrid"><label for="specialService">種別</label><select id="specialService"><option value="">変更しない</option><option value="local">各駅停車</option><option value="express">急行</option></select><label for="specialStation">駅</label><select id="specialStation"></select><label>制覇追加</label><label class="specialCheck"><input type="checkbox" id="specialConquer"> 選択駅を制覇済みにして★を付ける</label><label for="specialMission">ミッション</label><select id="specialMission"><option value="">追加しない</option></select></div><div class="specialHelp">※「駅」を選ぶと現在地をその駅へ直接変更します。制覇追加とミッション追加は必要なものだけ選択できます。</div><div class="modalActions"><button class="btn ghost" id="specialCancel">キャンセル</button><button class="btn green" id="specialApply">適用</button></div></div></div>'
+          if modal_anchor not in s: raise SystemExit('modal anchor missing')
+          s=s.replace(modal_anchor,modal_new,1)
+
+          js_anchor="const wrap=document.getElementById('trackWrap'),token=document.getElementById('token'),targetSelect=document.getElementById('targetStationSelect');stations.forEach((s,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`IN${s.n} ${s.name}`;targetSelect.appendChild(o)});"
+          js_new=js_anchor+"const specialStation=document.getElementById('specialStation'),specialMission=document.getElementById('specialMission');stations.forEach((st,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`IN${st.n} ${st.name}`;specialStation.appendChild(o)});function refreshSpecialMissions(){specialMission.innerHTML='<option value=\"\">追加しない</option>'+missionPool.map((m,i)=>`<option value=\"${i}\">${escapeHtml(m)}</option>`).join('')}refreshSpecialMissions();"
+          if js_anchor not in s: raise SystemExit('js station anchor missing')
+          s=s.replace(js_anchor,js_new,1)
+
+          missionpool_anchor="function renderMissionPool(){document.getElementById('missionCount').textContent=`登録ミッション: ${missionPool.length}件`;document.getElementById('missionList').innerHTML=missionPool.map((m,i)=>`<div class=\"missionItem\"><span>${escapeHtml(m)}</span><button class=\"missionDelete\" data-i=\"${i}\">×</button></div>`).join('');document.querySelectorAll('.missionDelete').forEach(b=>b.onclick=()=>{missionPool.splice(Number(b.dataset.i),1);saveMissionPool();renderMissionPool()})}"
+          missionpool_new="function renderMissionPool(){document.getElementById('missionCount').textContent=`登録ミッション: ${missionPool.length}件`;document.getElementById('missionList').innerHTML=missionPool.map((m,i)=>`<div class=\"missionItem\"><span>${escapeHtml(m)}</span><button class=\"missionDelete\" data-i=\"${i}\">×</button></div>`).join('');document.querySelectorAll('.missionDelete').forEach(b=>b.onclick=()=>{missionPool.splice(Number(b.dataset.i),1);saveMissionPool();renderMissionPool()});if(typeof refreshSpecialMissions==='function')refreshSpecialMissions()}"
+          if missionpool_anchor not in s: raise SystemExit('render mission anchor missing')
+          s=s.replace(missionpool_anchor,missionpool_new,1)
+
+          func_anchor="function exportBookmark(){const w=window.open('','_blank');if(!w){alert('ポップアップがブロックされました');return}"
+          special_funcs="function openSpecial(){specialStation.value=String(state.current);document.getElementById('specialService').value=state.service||'';document.getElementById('specialConquer').checked=false;refreshSpecialMissions();specialMission.value='';document.getElementById('specialModal').classList.add('show')}function closeSpecial(){document.getElementById('specialModal').classList.remove('show')}function applySpecial(){const idx=Number(specialStation.value),svc=document.getElementById('specialService').value,conquer=document.getElementById('specialConquer').checked,missionIdx=specialMission.value;pushUndo();const changes=[];state.current=idx;changes.push(`駅=${stations[idx].name}`);if(svc){state.service=svc;changes.push(`種別=${serviceNames[svc]}`)}if(conquer&&!state.stopped.includes(idx)){state.stopped.push(idx);changes.push('制覇追加')}else if(conquer){changes.push('制覇済み')}if(missionIdx!==''){const text=missionPool[Number(missionIdx)];let visitNo=null;for(let i=state.visits.length-1;i>=0;i--){if(state.visits[i].stationIndex===idx){visitNo=i+1;break}}state.missions.push({station:stations[idx].name,text,visitNo});changes.push(`ミッション=「${text}」`)}state.lastMoveText=`特別対応：${stations[idx].name}へ手動設定`;addLog(`特別対応：${changes.join(' / ')}`);closeSpecial();draw()}\n"
+          if func_anchor not in s: raise SystemExit('export anchor missing')
+          s=s.replace(func_anchor,special_funcs+func_anchor,1)
+
+          events_anchor="document.getElementById('bookmarkBtn').onclick=openBookmarkPreview;document.getElementById('bookmarkCancel').onclick=closeBookmarkPreview;document.getElementById('bookmarkExport').onclick=exportBookmark;document.getElementById('bookmarkModal').onclick=e=>{if(e.target.id==='bookmarkModal')closeBookmarkPreview()};draw();"
+          events_new="document.getElementById('bookmarkBtn').onclick=openBookmarkPreview;document.getElementById('bookmarkCancel').onclick=closeBookmarkPreview;document.getElementById('bookmarkExport').onclick=exportBookmark;document.getElementById('bookmarkModal').onclick=e=>{if(e.target.id==='bookmarkModal')closeBookmarkPreview()};document.getElementById('specialBtn').onclick=openSpecial;document.getElementById('specialCancel').onclick=closeSpecial;document.getElementById('specialApply').onclick=applySpecial;document.getElementById('specialModal').onclick=e=>{if(e.target.id==='specialModal')closeSpecial()};draw();"
+          if events_anchor not in s: raise SystemExit('events anchor missing')
+          s=s.replace(events_anchor,events_new,1)
+
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add special response popup controls"
+          git push

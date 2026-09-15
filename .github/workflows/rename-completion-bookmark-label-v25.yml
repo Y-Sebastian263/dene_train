@@ -1,0 +1,36 @@
+name: Rename completion bookmark label v25
+
+on:
+  push:
+    paths:
+      - .github/workflows/rename-completion-bookmark-label-v25.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rename label
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('<title>井の頭線すごろく v2.4</title>','<title>井の頭線すごろく v2.5</title>',1)
+          old='📖 栞を確認する'
+          new='📖 しおりを確認する'
+          if old not in s:
+              raise SystemExit('target label not found')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Rename completion bookmark label to hiragana"
+          git push

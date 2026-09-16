@@ -1,0 +1,38 @@
+name: Include special response entries in bookmark v26
+
+on:
+  push:
+    paths:
+      - .github/workflows/include-special-in-bookmark-v26.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch bookmark handling
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('<title>井の頭線すごろく v2.5</title>','<title>井の頭線すごろく v2.6</title>',1)
+          s=s.replace('しおりには通常停止した駅と、その停止時に確定したミッションだけを出力します。','しおりには通常停止した駅と特別対応で指定した駅、その駅に紐づく確定ミッションを出力します。',1)
+
+          old="async function applySpecial(){if(turnBusy)return;const idx=Number(specialStation.value),svc=document.getElementById('specialService').value,conquer=document.getElementById('specialConquer').checked,missionIdx=specialMission.value,from=state.current;pushUndo();const changes=[];closeSpecial();turnBusy=true;draw();try{const path=[];appendPhysicalPath(path,from,idx);if(path.length)await animatePath(path);state.current=idx;if(idx!==from)state.direction=idx>from?1:-1;changes.push(`駅=${stations[idx].name}`);if(svc){state.service=svc;changes.push(`種別=${serviceNames[svc]}`)}if(conquer&&!state.stopped.includes(idx)){state.stopped.push(idx);changes.push('制覇追加')}else if(conquer){changes.push('制覇済み')}if(missionIdx!==''){const text=missionPool[Number(missionIdx)];let visitNo=null;for(let i=state.visits.length-1;i>=0;i--){if(state.visits[i].stationIndex===idx){visitNo=i+1;break}}state.missions.push({station:stations[idx].name,text,visitNo});changes.push(`ミッション=「${text}」`)}state.lastMoveText=`特別対応：${stations[idx].name}へ手動設定`;addLog(`特別対応：${changes.join(' / ')}`)}finally{turnBusy=false;draw()}}"
+          new="async function applySpecial(){if(turnBusy)return;const idx=Number(specialStation.value),svc=document.getElementById('specialService').value,conquer=document.getElementById('specialConquer').checked,missionIdx=specialMission.value,from=state.current;pushUndo();const changes=[];closeSpecial();turnBusy=true;draw();try{const path=[];appendPhysicalPath(path,from,idx);if(path.length)await animatePath(path);state.current=idx;if(idx!==from)state.direction=idx>from?1:-1;changes.push(`駅=${stations[idx].name}`);if(svc){state.service=svc;changes.push(`種別=${serviceNames[svc]}`)}if(conquer&&!state.stopped.includes(idx)){state.stopped.push(idx);changes.push('制覇追加')}else if(conquer){changes.push('制覇済み')}state.visits.push({stationIndex:idx,turn:state.turns,source:'special'});const visitNo=state.visits.length;if(missionIdx!==''){const text=missionPool[Number(missionIdx)];state.missions.push({station:stations[idx].name,text,visitNo,source:'special'});changes.push(`ミッション=「${text}」`)}state.lastMoveText=`特別対応：${stations[idx].name}へ手動設定`;addLog(`特別対応：${changes.join(' / ')}`)}finally{turnBusy=false;draw()}}"
+          if old not in s:
+              raise SystemExit('applySpecial target not found')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Include special response entries in bookmark"
+          git push

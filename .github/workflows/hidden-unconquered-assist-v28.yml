@@ -1,0 +1,50 @@
+name: Hidden unconquered station assist v28
+
+on:
+  push:
+    paths:
+      - .github/workflows/hidden-unconquered-assist-v28.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch hidden dice assist
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('<title>井の頭線すごろく v2.7</title>','<title>井の頭線すごろく v2.8</title>',1)
+
+          old_newgame="function newGame(){return{current:0,direction:1,turns:0,service:null,stopped:[0],visits:[{stationIndex:0,turn:0}],logs:['ゲーム開始：渋谷からスタート'],missions:[],pendingMission:null,lastRoll:null,lastMoveText:'吉祥寺方面へ進行中',complete:false,completionPromptShown:false}}"
+          new_newgame="function newGame(){return{current:0,direction:1,turns:0,service:null,stopped:[0],visits:[{stationIndex:0,turn:0}],logs:['ゲーム開始：渋谷からスタート'],missions:[],pendingMission:null,lastRoll:null,lastMoveText:'吉祥寺方面へ進行中',complete:false,completionPromptShown:false,hiddenAssistCooldown:0}}"
+          if old_newgame not in s:
+              raise SystemExit('newGame target not found')
+          s=s.replace(old_newgame,new_newgame,1)
+
+          compute_anchor="function computeMove(service,steps){let pos=state.current,dir=state.direction||1;const path=[];for(let n=0;n<steps;n++){if(pos===16&&dir>0){dir=-1;addLog('吉祥寺で折り返し：渋谷方面へ')}else if(pos===0&&dir<0){dir=1;addLog('渋谷で折り返し：吉祥寺方面へ')}const next=nextStopIndex(pos,service,dir);if(next===pos){dir*=-1;n--;continue}appendPhysicalPath(path,pos,next);pos=next}return{pos,dir,path}}"
+          compute_new=compute_anchor+"function simulateMove(service,steps){let pos=state.current,dir=state.direction||1;for(let n=0;n<steps;n++){if(pos===16&&dir>0)dir=-1;else if(pos===0&&dir<0)dir=1;const next=nextStopIndex(pos,service,dir);if(next===pos){dir*=-1;n--;continue}pos=next}return{pos,dir}}"
+          if compute_anchor not in s:
+              raise SystemExit('computeMove target not found')
+          s=s.replace(compute_anchor,compute_new,1)
+
+          old_roll="state.service=service;const roll=randomInt(6);await animateDecision('進む駅数',['1','2','3','4','5','6'],String(roll),`/dice 6 → ${roll}`);state.lastRoll=roll;addLog(`移動数抽選：/dice 6 → ${roll}`);"
+          new_roll="state.service=service;let roll=randomInt(6);if((state.hiddenAssistCooldown||0)>0){state.hiddenAssistCooldown=Math.max(0,state.hiddenAssistCooldown-1)}else{const unseen=[];for(let r=1;r<=6;r++){const sim=simulateMove(service,r);if(!state.stopped.includes(sim.pos))unseen.push(r)}if(unseen.length){roll=unseen[Math.floor(Math.random()*unseen.length)];state.hiddenAssistCooldown=4}}await animateDecision('進む駅数',['1','2','3','4','5','6'],String(roll),`/dice 6 → ${roll}`);state.lastRoll=roll;addLog(`移動数抽選：/dice 6 → ${roll}`);"
+          if old_roll not in s:
+              raise SystemExit('roll target not found')
+          s=s.replace(old_roll,new_roll,1)
+
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add hidden dice assist for unconquered stations"
+          git push
